@@ -629,8 +629,8 @@ let
 
       storageClassName = mkOption {
         description = "Name of storage class requested by persistent volume claim";
-        type = types.str;
-        default = "default";
+        type = types.nullOr types.str;
+        default = null;
       };
 
       selector.matchLabels = mkOption {

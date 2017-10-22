@@ -185,7 +185,6 @@ let
   mkPvcSpec = pvc: {
     spec = {
       accessModes = pvc.accessModes;
-      storageClassName = pvc.storageClassName;
       resources = {
         requests = {
           storage = pvc.size;
@@ -195,6 +194,8 @@ let
       selector = {
         inherit (pvc.selector) matchLabels;
       };
+    }) // (optionalAttrs (pvc.storageClassName != null) {
+      storageClassName = pvc.storageClassName;
     });
   };
 
