@@ -1,16 +1,18 @@
+{lib, k8s, ...}:
+
+with lib;
+
 {
-  deployment = {
-    kubernetes.namespaces.test = {};
-    kubernetes.deployments.test = {
-      name = "test";
-      annotations.environment = "production";
-
-      replicas = 3;
-
-      pod.containers.test = {
-        image = "redis";
-        ports = [{port = 6379;}];
-      };
+  config = {
+    kubernetes.resources = {
+      deployments.deployment = k8s.loadJSON ./deployment.json;
+      configMaps.configmap = k8s.loadJSON ./configMap.json;
+      namespaces.namespace = k8s.loadJSON ./namespace.json;
+      daemonSets.daemonset = k8s.loadJSON ./daemonset.json;
+      services.service = k8s.loadJSON ./service.json;
+      customResourceDefinitions.cron = k8s.loadJSON ./crd.json;
     };
+
+    kubernetes.customResources.cron.my-awesome-cron-object = k8s.loadJSON ./cr.json;
   };
 }
