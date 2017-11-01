@@ -1,6 +1,5 @@
 {
   pkgs ? import <nixpkgs> {},
-  configuration ? ./test,
   extraModules ? [./modules.nix]
 }:
 
@@ -22,20 +21,69 @@ let
     ) resources
   );
 
+  filterResources = resourceFilter: resources:
+    mapAttrs (groupName: resources:
+      (filterAttrs (name: resource:
+        resourceFilter groupName name resource
+      ) resources)
+    ) resources;
+
   toKubernetesList = resources: {
     kind = "List";
     apiVersion = "v1";
     items = resources;
   };
 
-  evaldConfiguration = evalKubernetesModules configuration;
+  removeNixOptions = resources:
+    map (filterAttrs (name: attr: name != "nix")) resources;
+
+  buildResources = {
+    configuration ? {},
+    resourceFilter ? groupName: name: resource: true,
+    withDependencies ? true
+  }: let
+    evaldConfiguration = evalKubernetesModules configuration;
+
+    allResources = moduleToAttrs (
+      evaldConfiguration.config.kubernetes.resources //
+      evaldConfiguration.config.kubernetes.customResources
+    );
+
+    filteredResources = filterResources resourceFilter allResources;
+
+    allDependencies = flatten (
+      mapAttrsToList (groupName: resources:
+        mapAttrsToList (name: resource: resource.nix.dependencies) resources
+      ) filteredResources
+    );
+
+    resourceDependencies =
+      filterResources (groupName: name: resource:
+        elem "${groupName}/${name}" allDependencies
+      ) allResources;
+
+    finalResources =
+      if withDependencies
+      then recursiveUpdate resourceDependencies filteredResources
+      else filteredResources;
+
+    resources = removeNixOptions (
+      # custom resource definitions have to be allways created first
+      (flattenResources (filterResources (groupName: name: resource:
+        groupName == "customResourceDefinitions"
+      ) finalResources)) ++
+
+      # everything but custom resource definitions
+      (flattenResources (filterResources (groupName: name: resource:
+        groupName != "customResourceDefinitions"
+      ) finalResources))
+    );
+
+    kubernetesList = toKubernetesList resources;
+  in pkgs.writeText "resources.json" (builtins.toJSON kubernetesList);
+
 in {
-  config = pkgs.writeText "config" (builtins.toJSON (
-    toKubernetesList (
-      (flattenResources (
-        moduleToAttrs evaldConfiguration.config.kubernetes.resources)) ++
-      (flattenResources (
-        moduleToAttrs evaldConfiguration.config.kubernetes.customResources))
-    )
-  ));
+  inherit buildResources;
+
+  test = buildResources { configuration = ./test/default.nix; };
 }

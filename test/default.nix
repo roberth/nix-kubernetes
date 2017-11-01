@@ -1,7 +1,7 @@
 { config, ... }:
 
 {
-  kubernetes.version = "1.8";
+  kubernetes.version = "1.7";
 
   require = [./modules.nix ./deployment.nix];
 }
