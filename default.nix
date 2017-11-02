@@ -11,6 +11,7 @@ let
     modules = [./kubernetes.nix configuration] ++ extraModules;
     args = {
       inherit pkgs;
+      name = "default";
       k8s = { inherit loadJSON loadYAML; };
     };
   };
