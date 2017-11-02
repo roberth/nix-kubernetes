@@ -12,6 +12,11 @@ let
       inherit pkgs k8s name;
     };
   };
+
+  prefixResources = resources: serviceName:
+    mapAttrs (groupName: resources:
+      mapAttrs' (name: resource: nameValuePair "${serviceName}-${name}" resource) resources
+    ) resources;
 in {
   options.kubernetes.defaultModuleConfiguration = mkOption {
     description = "Default configuration for kubernetes modules";
@@ -70,7 +75,7 @@ in {
             module = config.kubernetes.moduleDefinitions.${module.module}.module;
             inherit (module) name configuration;
           };
-          resources = moduleToAttrs evaledService.config.kubernetes.resources;
+          resources = prefixResources (moduleToAttrs evaledService.config.kubernetes.resources) name;
         in resources
       ) config.kubernetes.modules
     );
