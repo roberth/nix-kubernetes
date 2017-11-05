@@ -7,7 +7,10 @@ with lib;
     kubernetes.resources = {
       deployments.deployment = mkMerge [
         (k8s.loadJSON ./deployment.json)
-        {nix.dependencies = ["configMaps/configmap"];}
+        {
+          metadata.name = "abcd";
+          nix.dependencies = ["configMaps/configmap"];
+        }
       ];
       configMaps.configmap = k8s.loadJSON ./configMap.json;
       namespaces.namespace = k8s.loadJSON ./namespace.json;

@@ -14,13 +14,26 @@ with lib;
       };
 
       config = {
-        kubernetes.resources.deployments."${name}-nginx" = mkMerge [
+        kubernetes.resources.deployments.nginx = mkMerge [
           (k8s.loadJSON ./deployment.json)
           {
-            metadata.name = mkForce "${name}-nginx";
-            spec.template.spec.containers.nginx.ports = mkForce [{
+            metadata.name = "${name}-nginx";
+
+            spec.template.spec.containers.nginx.ports."80" = {
               containerPort = config.port;
-            }];
+            };
+
+            spec.template.spec.containers.nginx.env.name.valueFrom.secretKeyRef = {
+              name = config.kubernetes.resources.configMaps.nginx.metadata.name;
+              key = "somekey";
+            };
+          }
+        ];
+
+        kubernetes.resources.configMaps.nginx = mkMerge [
+          (k8s.loadJSON ./configMap.json)
+          {
+            metadata.name = mkForce "${name}-nginx";
           }
         ];
       };
