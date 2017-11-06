@@ -1,6 +1,5 @@
 {
-  pkgs ? import <nixpkgs> {},
-  extraModules ? [./modules.nix]
+  pkgs ? import <nixpkgs> {}
 }:
 
 with pkgs.lib;
@@ -8,7 +7,7 @@ with import ./lib.nix { inherit pkgs; inherit (pkgs) lib; };
 
 let
   evalKubernetesModules = configuration: evalModules {
-    modules = [./kubernetes.nix configuration] ++ extraModules;
+    modules = [./kubernetes.nix ./modules.nix configuration];
     args = {
       inherit pkgs;
       name = "default";
