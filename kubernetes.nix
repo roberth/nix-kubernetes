@@ -5,8 +5,8 @@ with lib;
 let
   fixJSON = content: replaceStrings ["\\u"] ["u"] content;
 
-  fetchSpecs = url: sha256:
-    builtins.fromJSON (fixJSON (builtins.readFile (pkgs.fetchurl { inherit url sha256; })));
+  fetchSpecs = url:
+    builtins.fromJSON (fixJSON (builtins.readFile (builtins.fetchurl { inherit url; })));
 
   hasTypeMapping = def:
     hasAttr "type" def &&
@@ -60,9 +60,9 @@ let
     };
   };
 
-  definitionsForKubernetesSpecs = url: hash:
+  definitionsForKubernetesSpecs = url:
     let
-      swagger = fetchSpecs url hash;
+      swagger = fetchSpecs url;
       swaggerDefinitions = swagger.definitions;
 
       definitions = mapAttrs (name: definition:
@@ -280,11 +280,9 @@ let
 
   versionDefinitions = {
     "1.7" = definitionsForKubernetesSpecs
-      "https://github.com/kubernetes/kubernetes/raw/release-1.7/api/openapi-spec/swagger.json"
-      "0dazg36g98ynmlzqm17xyha2m411dzvlw3n8bq4fqbnq417wl880";
+      "https://github.com/kubernetes/kubernetes/raw/release-1.7/api/openapi-spec/swagger.json";
     "1.8" = definitionsForKubernetesSpecs
-      "https://github.com/kubernetes/kubernetes/raw/release-1.8/api/openapi-spec/swagger.json"
-      "16ic5gbxnpky9r2vhimn4zaz7cnk1qmkzkayxmn96br3l2s3vkxl";
+      "https://github.com/kubernetes/kubernetes/raw/release-1.8/api/openapi-spec/swagger.json";
   };
 
   versionOptions = {
