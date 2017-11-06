@@ -5,8 +5,7 @@ with lib;
 let
   fixJSON = content: replaceStrings ["\\u"] ["u"] content;
 
-  fetchSpecs = url:
-    builtins.fromJSON (fixJSON (builtins.readFile (builtins.fetchurl { inherit url; })));
+  fetchSpecs = path: builtins.fromJSON (fixJSON (builtins.readFile path));
 
   hasTypeMapping = def:
     hasAttr "type" def &&
@@ -60,9 +59,9 @@ let
     };
   };
 
-  definitionsForKubernetesSpecs = url:
+  definitionsForKubernetesSpecs = path:
     let
-      swagger = fetchSpecs url;
+      swagger = fetchSpecs path;
       swaggerDefinitions = swagger.definitions;
 
       definitions = mapAttrs (name: definition:
@@ -279,10 +278,8 @@ let
     };
 
   versionDefinitions = {
-    "1.7" = definitionsForKubernetesSpecs
-      "https://github.com/kubernetes/kubernetes/raw/release-1.7/api/openapi-spec/swagger.json";
-    "1.8" = definitionsForKubernetesSpecs
-      "https://github.com/kubernetes/kubernetes/raw/release-1.8/api/openapi-spec/swagger.json";
+    "1.7" = definitionsForKubernetesSpecs ./specs/1.7/swagger.json;
+    "1.8" = definitionsForKubernetesSpecs ./specs/1.8/swagger.json;
   };
 
   versionOptions = {
