@@ -24,6 +24,5 @@ rec {
   loadJSON = path: mkAllDefault (builtins.fromJSON (builtins.readFile path));
 
   loadYAML = path: loadJSON (pkgs.runCommand "yaml-to-json" {
-    path = [pkgs.remarshal];
-  } "remarshal -i ${path} -if yaml -of json > $out");
+  } "${pkgs.remarshal}/bin/remarshal -i ${path} -if yaml -of json > $out");
 }
