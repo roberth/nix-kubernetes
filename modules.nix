@@ -4,6 +4,8 @@ with lib;
 with import ./lib.nix { inherit pkgs lib; };
 
 let
+  globalConfig = config;
+
   evalK8SModule = {module, name, configuration}: evalModules {
     modules = [
       ./kubernetes.nix module configuration
@@ -45,7 +47,7 @@ in {
   options.kubernetes.modules = mkOption {
     description = "Attribute set of module definitions";
     default = {};
-    type = types.attrsOf (types.submodule ({name, ...}: {
+    type = types.attrsOf (types.submodule ({config, name, ...}: {
       options = {
         name = mkOption {
           description = "Module name";
@@ -63,6 +65,18 @@ in {
           description = "Name of the module to use";
           type = types.str;
         };
+
+        evaledModule = mkOption {
+          description = "Evaluated config";
+          internal = true;
+        };
+      };
+
+      config = {
+        evaledModule = (evalK8SModule {
+          module = globalConfig.kubernetes.moduleDefinitions.${config.module}.module;
+          inherit (config) name configuration;
+        });
       };
     }));
   };
@@ -70,13 +84,7 @@ in {
   config = {
     kubernetes.resources = mkMerge (
       mapAttrsToList (name: module:
-        let
-          evaledService = evalK8SModule {
-            module = config.kubernetes.moduleDefinitions.${module.module}.module;
-            inherit (module) name configuration;
-          };
-          resources = prefixResources (moduleToAttrs evaledService.config.kubernetes.resources) name;
-        in resources
+        prefixResources (moduleToAttrs module.evaledModule.config.kubernetes.resources) module.name
       ) config.kubernetes.modules
     );
 
