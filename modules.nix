@@ -8,7 +8,7 @@ let
 
   evalK8SModule = {module, name, configuration}: evalModules {
     modules = [
-      ./kubernetes.nix module configuration
+      ./kubernetes.nix ./modules.nix module configuration
     ] ++ config.kubernetes.defaultModuleConfiguration;
     args = {
       inherit pkgs k8s name;
