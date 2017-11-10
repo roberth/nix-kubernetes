@@ -1,6 +1,7 @@
 { config, lib, k8s, pkgs, ... }:
 
 with lib;
+with import ./lib.nix { inherit pkgs; inherit (pkgs) lib; };
 
 let
   fixJSON = content: replaceStrings ["\\u"] ["u"] content;
@@ -209,7 +210,7 @@ let
           ) swagger.paths)
         );
 
-      kubernetesResourceOptions = mapAttrs (name: value:
+      kubernetesResourceOptions = mapAttrs (groupName: value:
       let
         values = if isList value then reverseList value else [value];
         definitionName = tail values;
@@ -221,13 +222,17 @@ let
           groupVersion = if group != "" then "${group}/${version}" else version;
         in types.submodule ({name, ...}: {
           options = definition.options // extraOptions;
-          config = definition.config // {
-            kind = mkOptionDefault kind;
-            apiVersion = mkOptionDefault groupVersion;
+          config = mkMerge [
+            definition.config
+            {
+              kind = mkOptionDefault kind;
+              apiVersion = mkOptionDefault groupVersion;
 
-            # metdata.name cannot use option default, due deep config
-            metadata.name = mkOptionDefault name;
-          };
+              # metdata.name cannot use option default, due deep config
+              metadata.name = mkOptionDefault name;
+            }
+            (mkAllDefault config.kubernetes.defaults.${groupName} 1001)
+          ];
         });
 
         type =
@@ -290,6 +295,11 @@ let
     };
     "1.8" = (versionDefinitions."1.8").kubernetesResourceOptions;
   };
+
+  defaultOptions = mapAttrs (name: value: mkOption {
+    type = types.attrs;
+    default = {};
+  }) versionOptions.${config.kubernetes.version};
 in {
   options.kubernetes.version = mkOption {
     description = "Kubernetes version to deploy to";
@@ -302,6 +312,14 @@ in {
       options = versionOptions.${config.kubernetes.version};
     };
     description = "Attribute set of kubernetes resources";
+    default = {};
+  };
+
+  options.kubernetes.defaults = mkOption {
+    type = types.submodule {
+      options = defaultOptions;
+    };
+    description = "";
     default = {};
   };
 

@@ -46,5 +46,9 @@ with lib;
     };
 
     kubernetes.resources.services.nginx = k8s.loadJSON ./service.json;
+
+    kubernetes.defaultModuleConfiguration = [{
+      kubernetes.defaults.deployments.spec.replicas = 3;
+    }];
   };
 }

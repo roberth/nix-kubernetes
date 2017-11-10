@@ -3,14 +3,14 @@
 with lib;
 
 rec {
-  mkAllDefault = value:
+  mkAllDefault = value: priority:
     if isAttrs value
-    then mapAttrs (n: v: mkAllDefault v) value
+    then mapAttrs (n: v: mkAllDefault v priority) value
 
     else if isList value
-    then map (v: mkAllDefault v) value
+    then map (v: mkAllDefault v priority) value
 
-    else mkDefault value;
+    else mkOverride priority value;
 
   moduleToAttrs = value:
     if isAttrs value
@@ -21,7 +21,7 @@ rec {
 
     else value;
 
-  loadJSON = path: mkAllDefault (builtins.fromJSON (builtins.readFile path));
+  loadJSON = path: mkAllDefault (builtins.fromJSON (builtins.readFile path)) 1000;
 
   loadYAML = path: loadJSON (pkgs.runCommand "yaml-to-json" {
   } "${pkgs.remarshal}/bin/remarshal -i ${path} -if yaml -of json > $out");
