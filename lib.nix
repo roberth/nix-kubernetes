@@ -25,4 +25,8 @@ rec {
 
   loadYAML = path: loadJSON (pkgs.runCommand "yaml-to-json" {
   } "${pkgs.remarshal}/bin/remarshal -i ${path} -if yaml -of json > $out");
+
+  toBase64 = value:
+    builtins.readFile
+      (pkgs.runCommand "value-to-b64" {} "echo '${value}' | ${pkgs.coreutils}/bin/base64 -w0 > $out");
 }
